@@ -9,6 +9,11 @@
 
 name: Publish Docker image
 
+env:
+  # Setting an environment variable with the value of a configuration variable
+  env_var:
+    REGISTRY: monsieurplacard
+    IMAGE_NAME: a-simple-ssh-bastion
 on:
   release:
     types: [published]
