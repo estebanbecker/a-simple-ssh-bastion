@@ -42,7 +42,22 @@ jobs:
         with:
           images: monsieurplacard/a-simple-ssh-bastion
 
-      - name: Build and push Docker image
+      - name: Build Docker image
+        id: build
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ github.ref == 'refs/heads/main' && 'monsieurplacard/a-simple-ssh-bastion:latest' || '' }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Scan Docker image with Docker Scout
+        run: docker scout cves monsieurplacard/a-simple-ssh-bastion:latest
+
+      - name: Push Docker image
         id: push
         uses: docker/build-push-action@v3
         with:
