@@ -3,11 +3,15 @@ import paramiko
 import socket
 import threading
 import logging
+import time
+
+logging.basicConfig(level=logging.DEBUG)
+paramiko.util.log_to_file("paramiko_debug.log")
 
 # Configuration
 LOCAL_HOST = '0.0.0.0'
 LOCAL_PORT = 42345
-REMOTE_HOST = '192.168.0.1'
+REMOTE_HOST = 'IP'
 REMOTE_PORT = 22
 REMOTE_USER = 'user'
 REMOTE_PASSWORD = 'password'
