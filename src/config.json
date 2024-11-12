@@ -1,0 +1,25 @@
+{
+    "users": [
+        {
+            "username": "user1",
+            "password": "password",
+            "ssh_key": "/path/to/user1/key.pub"
+        },
+        {
+            "username": "user2",
+            "password": "password",
+            "ssh_key": "/path/to/user2/key.pub"
+        }
+    ],
+
+    "servers": [
+        {
+            "hostname": "server1",
+            "port": 22
+        },
+        {
+            "hostname": "server2",
+            "port": 22
+        }
+    ]
+}
