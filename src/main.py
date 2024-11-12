@@ -1,113 +1,188 @@
-import os
 import paramiko
+import base64
+from binascii import hexlify
+import sys
 import socket
 import threading
+import os
 import logging
-import time
 
-logging.basicConfig(level=logging.DEBUG)
-paramiko.util.log_to_file("paramiko_debug.log")
+# Activer le mode de débogage pour paramiko
+#logging.basicConfig(level=logging.DEBUG)
+paramiko.util.log_to_file('paramiko.log')
 
-# Configuration
-LOCAL_HOST = '0.0.0.0'
-LOCAL_PORT = 42345
-REMOTE_HOST = 'IP'
-REMOTE_PORT = 22
-REMOTE_USER = 'user'
-REMOTE_PASSWORD = 'password'
+# Configuration des serveurs cibles
+servers = {
+    '1': {'hostname': '192.168.2.214', 'username': 'user', 'password': 'UTBM2024uqac-CA', 'port': 22},
+    '2': {'hostname': '172.18.184.52', 'username': 'robey', 'password': 'foo', 'port': 2200},
+    '3': {'hostname': 'server3.example.com', 'username': 'user3', 'password': 'password3', 'port': 22},
+    '4': {'hostname': 'server4.example.com', 'username': 'user4', 'password': 'password4', 'port': 22},
+}
 
-# Path to the RSA key file
-RSA_KEY_PATH = 'test_rsa.key'
+# setup logging
+paramiko.util.log_to_file("demo_server.log")
 
-# Check if the RSA key file exists
-if not os.path.isfile(RSA_KEY_PATH):
-    raise FileNotFoundError(f"RSA key file '{RSA_KEY_PATH}' not found.")
+host_key = paramiko.RSAKey(filename="test_rsa.key")
+# host_key = paramiko.DSSKey(filename='test_dss.key')
 
-class SSHProxy(paramiko.ServerInterface):
+print("Read key: " + str(hexlify(host_key.get_fingerprint())))
+
+class SSHServer(paramiko.ServerInterface):
+    data = (
+        b"AAAAB3NzaC1yc2EAAAABIwAAAIEAyO4it3fHlmGZWJaGrfeHOVY7RWO3P9M7hp"
+        b"fAu7jJ2d7eothvfeuoRFtJwhUmZDluRdFyhFY/hFAh76PJKGAusIqIQKlkJxMC"
+        b"KDqIexkgHAfID/6mqvmnSJf0b5W8v5h2pI/stOSwTQ+pxVhwJ9ctYDhRSlF0iT"
+        b"UWT10hcuO4Ks8="
+    )
+    good_pub_key = paramiko.RSAKey(data=base64.b64decode(data))
+
     def __init__(self):
         self.event = threading.Event()
 
     def check_channel_request(self, kind, chanid):
-        if kind == 'session':
+        if kind == "session":
             return paramiko.OPEN_SUCCEEDED
         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
     def check_auth_password(self, username, password):
-        # Authentification locale (à adapter selon vos besoins)
-        if username == 'local_user' and password == 'local_password':
+        if (username == "robey") and (password == "foo"):
             return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
 
+    def check_auth_publickey(self, username, key):
+        print("Auth attempt with key: " + str(hexlify(key.get_fingerprint())))
+        if (username == "robey") and (key == self.good_pub_key):
+            return paramiko.AUTH_SUCCESSFUL
+        return paramiko.AUTH_FAILED
+
+    def check_auth_gssapi_with_mic(
+        self, username, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None
+    ):
+        if gss_authenticated == paramiko.AUTH_SUCCESSFUL:
+            return paramiko.AUTH_SUCCESSFUL
+        return paramiko.AUTH_FAILED
+
+    def check_auth_gssapi_keyex(
+        self, username, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None
+    ):
+        if gss_authenticated == paramiko.AUTH_SUCCESSFUL:
+            return paramiko.AUTH_SUCCESSFUL
+        return paramiko.AUTH_FAILED
+
+    def enable_auth_gssapi(self):
+        return True
+
     def get_allowed_auths(self, username):
-        return "password"
+        return "gssapi-keyex,gssapi-with-mic,password,publickey"
+
+    def check_channel_shell_request(self, channel):
+        self.event.set()
+        return True
+
+    def check_channel_pty_request(
+        self, channel, term, width, height, pixelwidth, pixelheight, modes
+    ):
+        return True
+
 
 def handle_client(client_socket):
     try:
+        # Créer un canal SSH pour le client
         transport = paramiko.Transport(client_socket)
-        transport.add_server_key(paramiko.RSAKey(filename=RSA_KEY_PATH))
-        server = SSHProxy()
-        transport.start_server(server=server)
+        transport.set_gss_host(socket.getfqdn(""))
 
-        print("Waiting for channel request...")
-#        channel = transport.open_channel(kind='session')
+        try:
+            transport.load_server_moduli()
+        except:
+            print("(Failed to load moduli -- gex will be unsupported.)")
+            raise
+
+        transport.add_server_key(host_key)
+        server = SSHServer()
+
+        try:
+            transport.start_server(server=server)
+        except paramiko.SSHException:
+            print("*** SSH negotiation failed.")
+            sys.exit(1)
+
+        # Ouvrir un canal de session
         channel = transport.accept(20)
         if channel is None:
-            print("No channel.")
+            print("*** No channel.")
+            sys.exit(1)
+        print("Authenticated!")
+
+        server.event.wait(10)
+
+        if not server.event.is_set():
+            print("*** Client never asked for a shell.")
+            sys.exit(1)
+
+        channel.send("\r\n\r\nWelcome to my dorky little BBS!\r\n\r\n")
+
+        # Afficher le menu de sélection des serveurs
+        channel.send("Bienvenue sur le bastion SSH. Veuillez sélectionner un serveur (1, 2, 3, 4): ")
+
+        # Lire la sélection de l'utilisateur
+        server_choice = channel.recv(1024).decode('utf-8').strip()
+
+        if server_choice not in servers:
+            channel.send("Sélection invalide. Déconnexion.\n")
+            channel.close()
             return
 
-        print("Channel accepted.")
+        # Configuration du serveur cible
+        target_server = servers[server_choice]
 
-        # Check if the channel is open
-        if not channel.active:
-            print("Channel is not active.")
-            return
+        # Connexion au serveur cible
+        target_transport = paramiko.Transport((target_server['hostname'], target_server['port']))
+        target_transport.connect(username=target_server['username'], password=target_server['password'])
+        target_channel = target_transport.open_session()
+        target_channel.get_pty()
+        target_channel.invoke_shell()
 
-        print("Channel is active.")
+        # Transmettre les commandes et les résultats entre le client et le serveur cible
+        def forward_data(source_channel, dest_channel):
+            while True:
+                data = source_channel.recv(1024)
+                if not data:
+                    break
+                dest_channel.send(data)
 
-        remote_transport = paramiko.Transport((REMOTE_HOST, REMOTE_PORT))
-        remote_transport.connect(username=REMOTE_USER, password=REMOTE_PASSWORD)
-        remote_channel = remote_transport.open_session()
+        # Démarrer les threads pour transmettre les données
+        threading.Thread(target=forward_data, args=(channel, target_channel)).start()
+        threading.Thread(target=forward_data, args=(target_channel, channel)).start()
 
-        def forward_data(src, dst):
-            try:
-                while True:
-                    data = src.recv(1024)
-                    if not data:
-                        break
-                    dst.send(data)
-            except Exception as e:
-                print(f"Error: {e}")
-            finally:
-                src.close()
-                dst.close()
-
-        threading.Thread(target=forward_data, args=(channel, remote_channel)).start()
-        threading.Thread(target=forward_data, args=(remote_channel, channel)).start()
-
-        # Handle PTY and shell requests
-        try:
-            channel.get_pty()
-            channel.invoke_shell()
-            print("PTY allocated and shell invoked.")
-        except paramiko.SSHException as e:
-            print(f"SSHException: {e}")
+        # Attendre la fin des threads
+        channel.join()
+        target_channel.join()
 
     except Exception as e:
-        print(f"Exception in handle_client: {e}")
+        print(f"Erreur: {e}")
     finally:
         client_socket.close()
 
-def main():
+def start_bastion(host, port):
+    # Créer un socket serveur
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((LOCAL_HOST, LOCAL_PORT))
-    server_socket.listen(10)
-    print(f"Listening on {LOCAL_HOST}:{LOCAL_PORT}")
+    server_socket.bind((host, port))
+    server_socket.listen(5)
 
-    while True:
-        client_socket, addr = server_socket.accept()
-        print(f"Connection from {addr}")
-        threading.Thread(target=handle_client, args=(client_socket,)).start()
+    print(f"Bastion SSH en écoute sur {host}:{port}")
 
-if __name__ == '__main__':
-    main()
+    try:
+        while True:
+            server_socket.listen(100)
+            print("Listening for connection ...")
+            client_socket, addr = server_socket.accept()
+            print(f"Connexion acceptée de {addr[0]}:{addr[1]}")
+            threading.Thread(target=handle_client, args=(client_socket,)).start()
+    except Exception as e:
+        print(f"Erreur: {e}")
+    finally:
+        server_socket.close()
+
+if __name__ == "__main__":
+    start_bastion('0.0.0.0', 2222)
