@@ -165,6 +165,10 @@ class Connexion(threading.Thread):
             channel.send("\033[91mDéconnexion du serveur cible.\033[0m\r\n")
             channel.close()
 
+        except paramiko.SSHException as e:
+            channel.send(f"Unable to connect to {target_server['hostname']}: {e}\r\n")
+            channel.close()
+            print(f"Erreur: {e}")
         except Exception as e:
             print(f"Erreur: {e}")
         finally:
