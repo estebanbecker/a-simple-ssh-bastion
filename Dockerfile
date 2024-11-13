@@ -9,6 +9,6 @@ COPY test_rsa.key ./
 
 # Copy in the source code
 COPY src ./src
-EXPOSE 42345
+EXPOSE 2222
 
 CMD ["python", "src/main.py"]

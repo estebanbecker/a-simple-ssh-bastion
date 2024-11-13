@@ -7,7 +7,7 @@ import sys
 
 # Configuration des serveurs cibles
 servers = {
-    '1': {'hostname': 'server1.example.com', 'username': 'user1', 'password': 'password1', 'port': 22},
+    '1': {'hostname': '127.0.0.1', 'username': 'user', 'password': 'password', 'port': 2200},
     '2': {'hostname': 'server2.example.com', 'username': 'user2', 'password': 'password2', 'port': 22},
     '3': {'hostname': 'server3.example.com', 'username': 'user3', 'password': 'password3', 'port': 22},
     '4': {'hostname': 'server4.example.com', 'username': 'user4', 'password': 'password4', 'port': 22},
