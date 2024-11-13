@@ -1,4 +1,4 @@
-FROM python:3.13-rc-bookworm
+FROM python:3.13-slim-bookworm
 WORKDIR /app
 
 # Install the application dependencies
