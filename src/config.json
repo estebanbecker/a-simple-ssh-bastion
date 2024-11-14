@@ -2,23 +2,25 @@
     "users": [
         {
             "username": "user1",
-            "password": "password",
-            "ssh_key": "/path/to/user1/key.pub"
+            "password": "$2b$12$07n6qD9PTtglZUqQ0zD/i.kXDpVFy8CXI1T2XOIMR8uL/y.2YbFni",
+            "ssh_key": "key.pub",
+            "roles": ["admin"]
         },
         {
             "username": "user2",
-            "password": "password",
-            "ssh_key": "/path/to/user2/key.pub"
+            "password": "$2b$12$v6dByuul5wiZsKG5LcLz5uNXd/qEMGDmD.WsEXuyHIl7i9noNFjwK",
+            "ssh_key": "key.pub",
+            "roles": ["user"]
         }
     ],
 
     "servers": [
         {
-            "hostname": "server1",
+            "destination": "server1",
             "port": 22
         },
         {
-            "hostname": "server2",
+            "destination": "server2",
             "port": 22
         }
     ]
