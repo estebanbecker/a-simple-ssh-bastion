@@ -4,13 +4,13 @@
             "username": "user1",
             "password": "$2b$12$w1cKDkhwrEZbwEM8nR7FUuV89APd9qA8Zh.SRu4/LlqaE.UElG0Ny",
             "ssh_key": "key.pub",
-            "roles": ["admin"]
+            "role": "admin"
         },
         {
             "username": "user2",
             "password": "$2b$12$MCFPQJofccd2iiKudlp6nutML81QhNKC6mJC95h8fB.HlZKgwzwDe",
             "ssh_key": "key.pub",
-            "roles": ["user"]
+            "role": "user"
         }
     ],
     "servers": [
