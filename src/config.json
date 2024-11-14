@@ -2,18 +2,17 @@
     "users": [
         {
             "username": "user1",
-            "password": "$2b$12$07n6qD9PTtglZUqQ0zD/i.kXDpVFy8CXI1T2XOIMR8uL/y.2YbFni",
+            "password": "$2b$12$w1cKDkhwrEZbwEM8nR7FUuV89APd9qA8Zh.SRu4/LlqaE.UElG0Ny",
             "ssh_key": "key.pub",
             "roles": ["admin"]
         },
         {
             "username": "user2",
-            "password": "$2b$12$v6dByuul5wiZsKG5LcLz5uNXd/qEMGDmD.WsEXuyHIl7i9noNFjwK",
+            "password": "$2b$12$MCFPQJofccd2iiKudlp6nutML81QhNKC6mJC95h8fB.HlZKgwzwDe",
             "ssh_key": "key.pub",
             "roles": ["user"]
         }
     ],
-
     "servers": [
         {
             "destination": "server1",
