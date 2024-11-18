@@ -283,14 +283,21 @@ class Connexion(threading.Thread):
 
             # Transmettre les commandes et les résultats entre le client et le serveur cible
             # et logger les commandes de l'utilisateur et les réponses du serveur
-            def forward_data(source_channel, dest_channel):
+            def forward_data(source_channel, dest_channel, user_logger):
+                buffer = ""
                 try:
                     while True:
                         data = source_channel.recv(1024)
                         if not data:
                             break
                         dest_channel.send(data)
-                        user_logger.info(data.decode('utf-8'))
+                        # user_logger.info(data.decode('utf-8'))
+                        buffer += data.decode('utf-8')
+                        if '\n' in buffer:
+                            lines = buffer.split('\n')
+                            for line in lines[:-1]:
+                                user_logger.info(line)
+                            buffer = lines[-1]
                 except Exception as e:
                     print(f"Erreur de transfert de données: {e}")
                     user_logger.error(f"Erreur de transfert de données: {e}")
@@ -299,8 +306,8 @@ class Connexion(threading.Thread):
                     dest_channel.close()
 
             # Démarrer les threads pour transmettre les données
-            threading.Thread(target=forward_data, args=(channel, target_channel)).start()
-            threading.Thread(target=forward_data, args=(target_channel, channel)).start()
+            threading.Thread(target=forward_data, args=(channel, target_channel, user_logger)).start()
+            threading.Thread(target=forward_data, args=(target_channel, channel, user_logger)).start()
 
             # Attendre la fin de la session
             target_channel.recv_exit_status()
