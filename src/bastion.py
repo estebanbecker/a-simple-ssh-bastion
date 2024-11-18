@@ -5,12 +5,20 @@ import socket
 import threading
 import sys
 
+#Paramiko debug
+paramiko.common.logging.basicConfig(level=paramiko.common.DEBUG)
+
 # Configuration des serveurs cibles
 servers = {
-    '1': {'hostname': 'server1.example.com', 'username': 'user1', 'password': 'password1', 'port': 22},
-    '2': {'hostname': 'server2.example.com', 'username': 'user2', 'password': 'password2', 'port': 22},
-    '3': {'hostname': 'server3.example.com', 'username': 'user3', 'password': 'password3', 'port': 22},
-    '4': {'hostname': 'server4.example.com', 'username': 'user4', 'password': 'password4', 'port': 22},
+    '1': {'hostname': '127.0.0.1', 'username': 'user', 'password': 'password', 'port': 2200, 'groupe': '1'},
+    '2': {'hostname': 'server2.example.com', 'username': 'user2', 'password': 'password2', 'port': 2200, 'groupe': '2'},
+    '3': {'hostname': 'server3.example.com', 'username': 'user3', 'password': 'password3', 'port': 2200, 'groupe': '3'},
+    '4': {'hostname': 'server4.example.com', 'username': 'user4', 'password': 'password4', 'port': 2200, 'groupe': '4'},
+}
+
+user = {
+    'esteban': {'password': 'password', 'public_key_file': 'esteban.pub', 'groupe': ['1', '2']},
+    'user2': {'password': 'password2', 'public_key_file': None, 'groupe': ['2', '3']},
 }
 
 # setup logging
@@ -21,14 +29,24 @@ host_key = paramiko.RSAKey(filename="test_rsa.key")
 
 print("Read key: " + str(hexlify(host_key.get_fingerprint())))
 
+# Récupérer la clé publique de l'utilisateur
+def get_public_key(public_key_file):
+    try:
+        with open(public_key_file, 'r') as f:
+            key_data = f.read().strip()
+            if key_data.startswith("ssh-rsa"):
+                return paramiko.RSAKey(data=base64.b64decode(key_data.split()[1]))
+            elif key_data.startswith("ssh-dss"):
+                return paramiko.DSSKey(data=base64.b64decode(key_data.split()[1]))
+            elif key_data.startswith("ssh-ed25519"):
+                return paramiko.Ed25519Key(data=base64.b64decode(key_data.split()[1]))
+            elif key_data.startswith("ecdsa-sha2-nistp256"):
+                return paramiko.ECDSAKey(data=base64.b64decode(key_data.split()[1]))
+    except Exception as e:
+        print(f"Erreur lors de la lecture de la clé publique: {e}")
+        return None
+
 class SSHServer(paramiko.ServerInterface):
-    data = (
-        b"AAAAB3NzaC1yc2EAAAABIwAAAIEAyO4it3fHlmGZWJaGrfeHOVY7RWO3P9M7hp"
-        b"fAu7jJ2d7eothvfeuoRFtJwhUmZDluRdFyhFY/hFAh76PJKGAusIqIQKlkJxMC"
-        b"KDqIexkgHAfID/6mqvmnSJf0b5W8v5h2pI/stOSwTQ+pxVhwJ9ctYDhRSlF0iT"
-        b"UWT10hcuO4Ks8="
-    )
-    good_pub_key = paramiko.RSAKey(data=base64.b64decode(data))
 
     def __init__(self):
         self.event = threading.Event()
@@ -39,14 +57,33 @@ class SSHServer(paramiko.ServerInterface):
         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
     def check_auth_password(self, username, password):
-        if (username == "robey") and (password == "foo"):
+        if username in user and password == user[username]['password']:
+            print(f"Authentification par mot de passe réussie pour {username}")
             return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
-
+    
     def check_auth_publickey(self, username, key):
-        print("Auth attempt with key: " + str(hexlify(key.get_fingerprint())))
-        if (username == "robey") and (key == self.good_pub_key):
-            return paramiko.AUTH_SUCCESSFUL
+        key_location = './user_keys/'
+        try:
+            # Vérifier si l'utilisateur existe
+            if username not in user:
+                return paramiko.AUTH_FAILED
+            
+            # Construire le chemin du fichier de la clé publique
+            public_key_file = key_location + user[username]['public_key_file']
+            
+            # Récupérer la clé publique de l'utilisateur
+            stored_key = get_public_key(public_key_file)
+            if stored_key is None:
+                return paramiko.AUTH_FAILED
+            
+            # Comparer les empreintes digitales des clés
+            if key.get_fingerprint() == stored_key.get_fingerprint():
+                print(f"Clé publique vérifiée pour {username}")
+                return paramiko.AUTH_SUCCESSFUL
+        except Exception as e:
+            print(f"Erreur lors de la vérification de la clé publique: {e}")
+        
         return paramiko.AUTH_FAILED
 
     def check_auth_gssapi_with_mic(
