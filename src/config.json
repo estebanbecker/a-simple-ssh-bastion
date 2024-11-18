@@ -1,0 +1,53 @@
+{
+    "users": [
+        {
+            "username": "esteban",
+            "password": "$2b$12$Dm.ZZaugFcIhExGHnaFXFuQd4sr7MP4VxOdVVmZAPPV2Olm7GKKWq",
+            "ssh_key": "esteban.pub",
+            "groups": [
+                "1",
+                "2"
+            ]
+        },
+        {
+            "username": "user2",
+            "password": "$2b$12$6GSFYJSulH5.h55qgODfZ.1rwWSe2/R2gDCI18TH9ZUXK2psC/yeO",
+            "ssh_key": null,
+            "groups": [
+                "2",
+                "3",
+                "4"
+            ]
+        }
+    ],
+    "servers": [
+        {
+            "group": "1",
+            "destination": "127.0.0.1",
+            "port": 2200,
+            "username": "user1",
+            "password": "server1password"
+        },
+        {
+            "group": "2",
+            "destination": "server2.example.com",
+            "port": 2200,
+            "username": "user2",
+            "password": "server2password"
+        },
+        {
+            "group": "3",
+            "destination": "server3.example.com",
+            "port": 2200,
+            "username": "user3",
+            "password": "server3password"
+        },
+        {
+            "group": "4",
+            "destination": "server4.example.com",
+            "port": 2200,
+            "username": "user4",
+            "password": "server4password"
+        }
+    ]
+}
