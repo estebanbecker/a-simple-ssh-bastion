@@ -124,6 +124,42 @@ def get_user_logger(username):
 
     return logger
 
+def clean_ansi_sequences(text):
+    """
+    Supprime les séquences ANSI des données reçues.
+
+    :param data: Chaîne brute contenant des séquences ANSI
+    :return: Chaîne nettoyée
+    """
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
+
+def process_lines(lines, user_logger, is_command_line):
+    """
+    Traite et journalise les lignes extraites du tampon.
+
+    :param lines: Liste de lignes à traiter
+    :param user_logger: Logger pour enregistrer les lignes
+    :param is_command_line: Indicateur de traitement des commandes utilisateur
+    """
+    for line in lines:
+        cleaned_line = line.strip()
+
+        if cleaned_line.endswith('$') or cleaned_line.endswith('#'):
+            # Une invite de commande détectée
+            user_logger.info(cleaned_line)
+            is_command_line = True
+        elif is_command_line:
+            # Ligne suivante après une commande utilisateur
+            user_logger.info(cleaned_line)
+            is_command_line = False
+        elif cleaned_line:
+            # Lignes non vides
+            user_logger.info(cleaned_line)
+        else:
+            # Lignes vides provenant d'un fichier ou d'une commande
+            user_logger.info("")
+
 
 class SSHServer(paramiko.ServerInterface):
 
@@ -282,25 +318,37 @@ class Connexion(threading.Thread):
             target_channel.invoke_shell()
 
             # Transmettre les commandes et les résultats entre le client et le serveur cible
-            # et logger les commandes de l'utilisateur et les réponses du serveur
             def forward_data(source_channel, dest_channel, user_logger):
+                """
+                Transfère les données entre deux canaux, tout en journalisant les lignes.
+                Gère les lignes inutiles et les séquences ANSI dans les données reçues.
+
+                :param source_channel: Le canal source
+                :param dest_channel: Le canal destination
+                :param user_logger: Logger pour enregistrer les lignes
+                """
                 buffer = ""
+                is_command_line = False  # Indique si la ligne provient d'une commande utilisateur
+
                 try:
                     while True:
+                        # Réception des données
                         data = source_channel.recv(1024)
                         if not data:
                             break
+                        # Envoi des données au canal destination
                         dest_channel.send(data)
-                        # user_logger.info(data.decode('utf-8'))
-                        buffer += data.decode('utf-8')
+                        # Nettoyage des séquences ANSI et ajout au tampon
+                        buffer += clean_ansi_sequences(data.decode('utf-8'))
+                        # Si une nouvelle ligne est détectée, traiter les lignes accumulées
                         if '\n' in buffer:
                             lines = buffer.split('\n')
-                            for line in lines[:-1]:
-                                user_logger.info(line)
-                            buffer = lines[-1]
+                            process_lines(lines[:-1], user_logger, is_command_line)
+                            buffer = lines[-1]  # Conserver les données incomplètes
                 except Exception as e:
-                    print(f"Erreur de transfert de données: {e}")
-                    user_logger.error(f"Erreur de transfert de données: {e}")
+                    error_message = f"Erreur de transfert de données: {e}"
+                    print(error_message)
+                    user_logger.error(error_message)
                 finally:
                     source_channel.close()
                     dest_channel.close()
