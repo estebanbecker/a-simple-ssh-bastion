@@ -1,5 +1,3 @@
-import socket
-import threading
 from bastion import Bastion
 
 def start_bastion(host, port):
