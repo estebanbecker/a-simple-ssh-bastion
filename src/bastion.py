@@ -20,30 +20,38 @@ user = {
     'user2': {'password': 'password2', 'public_key_file': None, 'groupe': ['2', '3']},
 }
 
-# setup logging
-# paramiko.util.log_to_file("demo_server.log")
-# Configuration de la journalisation globale
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("bastion.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger("BastionSSH")
 
-
-host_key = paramiko.RSAKey(filename="test_rsa.key")
-logger.info("Read key: %s", hexlify(host_key.get_fingerprint()))
-# host_key = paramiko.DSSKey(filename='test_dss.key')
-
-print("Read key: " + str(hexlify(host_key.get_fingerprint())))
 
 class Bastion:
     def __init__(self, host, port):
+        """
+        Constructeur de la classe Bastion
+        host: Adresse IP du serveur bastion
+        port: Port du serveur bastion
+        """
         self.host = host
         self.port = port
+
+        # setup logging
+        # paramiko.util.log_to_file("demo_server.log")
+        # Configuration de la journalisation globale
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler("bastion.log"),
+                logging.StreamHandler(sys.stdout)
+            ]
+        )
+        self.logger = logging.getLogger("BastionSSH")
+
+
+        self.host_key = paramiko.RSAKey(filename="test_rsa.key")
+        self.logger.info("Read key: %s", hexlify(self.host_key.get_fingerprint()))
+        # host_key = paramiko.DSSKey(filename='test_dss.key')
+
+        print("Read key: " + str(hexlify(self.host_key.get_fingerprint())))
+
 
     def start(self):
         """
@@ -56,19 +64,19 @@ class Bastion:
         server_socket.listen(5)
 
         print(f"Bastion SSH en écoute sur {self.host}:{self.port}")
-        logger.info(f"Bastion SSH en écoute sur {self.host}:{self.port}")
+        self.logger.info(f"Bastion SSH en écoute sur {self.host}:{self.port}")
 
         try:
             while True:
                 client_socket, addr = server_socket.accept()
                 print(f"Connexion acceptée de {addr[0]}:{addr[1]}")
-                logger.info(f"Connexion acceptée de {addr[0]}:{addr[1]}")   
-                connexion = Connexion(client_socket, logger, host_key, servers, user)
+                self.logger.info(f"Connexion acceptée de {addr[0]}:{addr[1]}")   
+                connexion = Connexion(client_socket, self.logger, self.host_key, servers, user)
                 threading.Thread(target=connexion.handle_client).start()
         except Exception as e:
             print(f"Erreur serveur: {e}")
-            logger.error(f"Erreur serveur: {e}")
+            self.logger.error(f"Erreur serveur: {e}")
         finally:
             server_socket.close()
-            logger.info("Serveur arrêté.")
+            self.logger.info("Serveur arrêté.")
 
