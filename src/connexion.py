@@ -168,6 +168,10 @@ class Connexion(threading.Thread):
             user_logger.info("Fermeture de la connexion.")
 
     def get_user_logger(self,username):
+        """
+        Récupère un logger pour un utilisateur donné.
+        username: Nom d'utilisateur
+        """
         logs_dir = "./logs"
         if not os.path.exists(logs_dir):
             os.makedirs(logs_dir)
@@ -207,6 +211,12 @@ class Connexion(threading.Thread):
             channel.send(ascii_art + "\r\n")
 
     def print_table(self, servers, user, channel):
+        """
+        Affiche un tableau de serveurs disponibles pour l'utilisateur.
+        servers: Dictionnaire de serveurs
+        user: Dictionnaire d'utilisateurs
+        channel: Canal de communication avec le client
+        """
         i = 1
         correspondance = {}
         header = f"{'ID':<5} | {'Hostname':<30} | {'Username':<20}\r\n"

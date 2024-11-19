@@ -4,6 +4,9 @@ import base64
 from binascii import hexlify
 
 class SSHServer(paramiko.ServerInterface):
+    """
+    Classe pour gérer les connexions SSH
+    """
 
     user = {}
 
