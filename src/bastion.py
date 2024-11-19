@@ -5,6 +5,7 @@ import sys
 import logging
 from connexion import Connexion
 import paramiko
+import os
 
 
 # Configuration des serveurs cibles
@@ -32,8 +33,6 @@ class Bastion:
         self.host = host
         self.port = port
 
-        # setup logging
-        # paramiko.util.log_to_file("demo_server.log")
         # Configuration de la journalisation globale
         logging.basicConfig(
             level=logging.INFO,
@@ -45,13 +44,28 @@ class Bastion:
         )
         self.logger = logging.getLogger("BastionSSH")
 
+        # Charger ou générer la clé hôte
+        self.load_or_generate_host_key()
 
-        self.host_key = paramiko.RSAKey(filename="test_rsa.key")
-        self.logger.info("Read key: %s", hexlify(self.host_key.get_fingerprint()))
-        # host_key = paramiko.DSSKey(filename='test_dss.key')
+    def load_or_generate_host_key(self):
+        """
+        Charger la clé hôte si elle existe, sinon en générer une nouvelle
+        """
+        key_filename = "test_rsa.key"
+
+        # Vérifier si le fichier de clé existe
+        if not os.path.exists(key_filename):
+            # Générer une nouvelle clé RSA
+            self.host_key = paramiko.RSAKey.generate(2048)
+            # Sauvegarder la clé dans un fichier
+            self.host_key.write_private_key_file(key_filename)
+            self.logger.info("Generated new RSA key and saved to %s", key_filename)
+        else:
+            # Charger la clé existante
+            self.host_key = paramiko.RSAKey(filename=key_filename)
+            self.logger.info("Read key: %s", hexlify(self.host_key.get_fingerprint()))
 
         print("Read key: " + str(hexlify(self.host_key.get_fingerprint())))
-
 
     def start(self):
         """
