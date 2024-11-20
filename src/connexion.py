@@ -80,77 +80,52 @@ class Connexion(threading.Thread):
             correspondance = self.print_table(self.servers, self.users, channel)
             self.logger.info(f"Serveurs listés pour {username}.")
 
-            channel.send(f"Veuillez selectionner un serveur entre 1 et {len(correspondance)}: ")
-                         
-            # Lire la sélection de l'utilisateur
-            server_choice = channel.recv(1024).decode('utf-8').strip()
-            user_logger.info(f"Sélection du serveur: {server_choice}")
+            target_channel = None
 
-            channel.send(f"\r\n")
+            while target_channel is None:
+                    
+                # Demander à l'utilisateur de sélectionner un serveur
+                server_choice = None
+                while server_choice not in correspondance:
+                    channel.send(f"Veuillez selectionner un serveur entre 1 et {len(correspondance)} ou exit: ")
+                                
+                    # Lire la sélection de l'utilisateur
+                    server_choice = self.lire_entree_utilisateur(channel)
+                    user_logger.info(f"Sélection du serveur: {server_choice}")
 
-            if server_choice not in correspondance:
-                user_logger.warning(f"Sélection invalide: {server_choice}")
-                channel.send("\033[91mErreur: Sélection invalide.\033[0m\r\n")
-                channel.close()
-                return
+                    if server_choice == "exit":
+                        channel.send("Déconnexion...\r\n")
+                        user_logger.info("Déconnexion du client.")
+                        return
+                    elif server_choice not in correspondance:
+                        channel.send(f"\r\n")
+                        user_logger.warning(f"Sélection invalide: {server_choice}")
+                        channel.send("\033[91mErreur: Sélection invalide.\033[0m\r\n")
 
-            # Configuration du serveur cible
-            target_server = self.servers[correspondance[server_choice]]
+                # Configuration du serveur cible
+                target_server = self.servers[correspondance[server_choice]]
 
-            channel.send(f"Connexion au serveur {target_server['hostname']} ...\r\n")
-            user_logger.info(f"Connexion au serveur {target_server['hostname']} ...")
+                channel.send(f"Connexion au serveur {target_server['hostname']} ...\r\n")
+                user_logger.info(f"Connexion au serveur {target_server['hostname']} ...")
 
-            # Connexion au serveur cible
-            target_transport = paramiko.Transport((target_server['hostname'], target_server['port']))
-            target_transport.connect(username=target_server['username'], password=target_server['password'])
-            target_channel = target_transport.open_session()
-            target_channel.get_pty()
-            target_channel.invoke_shell()
-
-            # Transmettre les commandes et les résultats entre le client et le serveur cible
-            def forward_data(source_channel, dest_channel, user_logger):
-                """
-                Transfère les données entre deux canaux, tout en journalisant les lignes.
-                Gère les lignes inutiles et les séquences ANSI dans les données reçues.
-
-                :param source_channel: Le canal source
-                :param dest_channel: Le canal destination
-                :param user_logger: Logger pour enregistrer les lignes
-                """
-                buffer = ""
-                is_command_line = False  # Indique si la ligne provient d'une commande utilisateur
-
+                # Se connecter au serveur cible
                 try:
-                    while True:
-                        # Réception des données
-                        data = source_channel.recv(1024)
-                        if not data:
-                            break
-                        # Envoi des données au canal destination
-                        dest_channel.send(data)
-                        # Nettoyage des séquences ANSI et ajout au tampon
-                        buffer += self.clean_ansi_sequences(data.decode('utf-8'))
-                        # Si une nouvelle ligne est détectée, traiter les lignes accumulées
-                        if '\n' in buffer:
-                            lines = buffer.split('\n')
-                            self.process_lines(lines[:-1], user_logger, is_command_line)
-                            buffer = lines[-1]  # Conserver les données incomplètes
+                    target_channel = self.connect_to_server(target_server, channel)
+                    user_logger.info(f"Connecté à {target_server['hostname']}")
+                    channel.send(f"Connecté à {target_server['hostname']}\r\n")
                 except Exception as e:
-                    error_message = f"Erreur de transfert de données: {e}"
-                    print(error_message)
-                    user_logger.error(error_message)
-                finally:
-                    source_channel.close()
-                    dest_channel.close()
+                    user_logger.error(f"Impossible de se connecter à {target_server['hostname']}: {e}")
+                    channel.send(f"Impossible de se connecter à {target_server['hostname']}: {e}\r\n")
+                    return
+
 
             # Démarrer les threads pour transmettre les données
-            threading.Thread(target=forward_data, args=(channel, target_channel, user_logger)).start()
-            threading.Thread(target=forward_data, args=(target_channel, channel, user_logger)).start()
+            threading.Thread(target=self.forward_data, args=(channel, target_channel, user_logger)).start()
+            threading.Thread(target=self.forward_data, args=(target_channel, channel, user_logger)).start()
 
             # Attendre la fin de la session
             target_channel.recv_exit_status()
             user_logger.info(f"Déconnexion du serveur cible: {target_server['hostname']}")
-            channel.send("\033[91mDéconnexion du serveur cible.\033[0m\r\n")
             channel.close()
 
         except paramiko.SSHException as e:
@@ -177,6 +152,117 @@ class Connexion(threading.Thread):
                 print(f"C'est pas grave, voici l'erreur : {e}")
                 print("☻"*50)
             self.client_socket.close()
+
+    def lire_entree_utilisateur(self,channel):
+        """
+        Lit l'entrée utilisateur et renvoie la sélection du serveur.
+        channel: Canal de communication avec le client
+        """
+        server_choice = ""
+        while True:
+            char = channel.recv(1).decode('utf-8')
+            if char == '\r':  # Détecter le retour à la ligne
+                break
+            elif char == '\x7f':  # Gestion du backspace
+                if len(server_choice) > 0:
+                    server_choice = server_choice[:-1]
+                    channel.send('\b \b')
+            else:
+                server_choice += char
+                channel.send(char)
+        channel.send('\r\n')
+        return server_choice
+
+    # Transmettre les commandes et les résultats entre le client et le serveur cible
+    def forward_data(self, source_channel, dest_channel, user_logger):
+        """
+        Transfère les données entre deux canaux, tout en journalisant les lignes.
+        Gère les lignes inutiles et les séquences ANSI dans les données reçues.
+
+        :param source_channel: Le canal source
+        :param dest_channel: Le canal destination
+        :param user_logger: Logger pour enregistrer les lignes
+        """
+        buffer = ""
+        is_command_line = False  # Indique si la ligne provient d'une commande utilisateur
+
+        try:
+            while True:
+                # Réception des données
+                data = source_channel.recv(1024)
+                if not data:
+                    break
+                # Envoi des données au canal destination
+                dest_channel.send(data)
+                # Nettoyage des séquences ANSI et ajout au tampon
+                buffer += self.clean_ansi_sequences(data.decode('utf-8'))
+                # Si une nouvelle ligne est détectée, traiter les lignes accumulées
+                if '\n' in buffer:
+                    lines = buffer.split('\n')
+                    self.process_lines(lines[:-1], user_logger, is_command_line)
+                    buffer = lines[-1]  # Conserver les données incomplètes
+        except Exception as e:
+            error_message = f"Erreur de transfert de données: {e}"
+            print(error_message)
+            user_logger.error(error_message)
+        finally:
+            source_channel.close()
+            dest_channel.close()
+
+    def connect_to_server(self,target_server, channel):
+        """
+        Se connecte au serveur cible et renvoie le canal de communication.
+        target_server: Dictionnaire de configuration du serveur cible
+        channel: Canal de communication avec le client
+        """
+        # Connexion au serveur cible
+        target_transport = paramiko.Transport((target_server['hostname'], target_server['port']))
+        try:
+            if 'private_key_file' in target_server and target_server['private_key_file']!= None:
+                # Authentification par clé privée
+                private_key_file = target_server['private_key_file']
+                self.location_private_key = "server_keys/"
+                
+                private_key_file = os.path.join(self.location_private_key, private_key_file)
+                # Charger la clé privée
+                try:
+                    private_key = paramiko.RSAKey.from_private_key_file(private_key_file)
+                except paramiko.ssh_exception.PasswordRequiredException:
+                    # Demander le mot de passe de la clé privée
+                    private_key_password = channel.getpass("Mot de passe de la clé privée: ")
+                    private_key = paramiko.RSAKey.from_private_key_file(private_key_file, password=private_key_password)
+                
+                #Si la clé privée n'est pas au format RSA, essayer avec une clé DSA
+                except paramiko.ssh_exception.SSHException:
+                    try:
+                        private_key = paramiko.DSSKey.from_private_key_file(private_key_file)
+                    except paramiko.ssh_exception.PasswordRequiredException:
+                        # Demander le mot de passe de la clé privée
+                        private_key_password = channel.getpass("Mot de passe de la clé privée: ")
+                        private_key = paramiko.DSSKey.from_private_key_file(private_key_file, password=private_key_password)
+                    
+                    #Si la clé privée n'est pas au format DSA, essayer avec une clé ECDSA
+                    except paramiko.ssh_exception.SSHException:
+                        try:
+                            private_key = paramiko.ECDSAKey.from_private_key_file(private_key_file)
+                        except paramiko.ssh_exception.PasswordRequiredException:
+                            # Demander le mot de passe de la clé privée
+                            private_key_password = channel.getpass("Mot de passe de la clé privée: ")
+                            private_key = paramiko.ECDSAKey.from_private_key_file(private_key_file, password=private_key_password)
+
+                target_transport.connect(username=target_server['username'], pkey=private_key)
+            else:
+                # Authentification par mot de passe
+                target_transport.connect(username=target_server['username'], password=target_server['password'])      
+
+        except paramiko.ssh_exception.AuthenticationException as e:
+            raise Exception(f"Erreur d'authentification: {e}")  
+        
+        target_channel = target_transport.open_session()
+        target_channel.get_pty()
+        target_channel.invoke_shell()
+
+        return target_channel
 
     def get_user_logger(self,username):
         """

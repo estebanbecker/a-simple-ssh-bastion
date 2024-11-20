@@ -13,10 +13,10 @@ class Bastion:
 
     # Configuration des serveurs cibles
     servers = {
-        '1': {'hostname': '127.0.0.1', 'username': 'user', 'password': 'password', 'port': 2200, 'groupe': 'admin'},
-        '2': {'hostname': 'server2.example.com', 'username': 'user2', 'password': 'password2', 'port': 2200, 'groupe': '2'},
-        '3': {'hostname': 'server3.example.com', 'username': 'user3', 'password': 'password3', 'port': 2200, 'groupe': '3'},
-        '4': {'hostname': 'server4.example.com', 'username': 'user4', 'password': 'password4', 'port': 2200, 'groupe': '4'},
+        '1': {'hostname': '127.0.0.1', 'username': 'user', 'password': 'password', 'private_key_file': None, 'port': 2200, 'groupe': 'admin'},
+        '2': {'hostname': 'localhost', 'username': 'root', 'password': None, 'private_key_file': 'srv2.key', 'port': 2220, 'groupe': '2'},
+        '3': {'hostname': 'localhost', 'username': 'user', 'password': 'password', 'private_key_file': None, 'port': 2202, 'groupe': '3'},
+        '4': {'hostname': 'localhost', 'username': 'user', 'password': 'password', 'private_key_file': None, 'port': 2203, 'groupe': '4'},
     }
 
     user = {
