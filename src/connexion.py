@@ -159,13 +159,24 @@ class Connexion(threading.Thread):
             channel.close()
             print(f"Erreur: {e}")
         except Exception as e:
-            user_logger.error(f"Erreur: {e}")
-            print(f"Erreur: {e}")
+            try:
+                user_logger.error(f"Erreur: {e}")
+                channel.send(f"Erreur: {e}\r\n")
+            except UnboundLocalError as e2:
+                print("♦"*50)
+                print(f"C'est pas grave, voici l'erreur : {e2}")
+                print("♦"*50)
+            # print(f"Erreur: {e}")
         finally:
+            try:
+                user_logger.info("Session terminée.")
+                user_logger.info("Déconnexion du client.")
+                user_logger.info("Fermeture de la connexion.")
+            except UnboundLocalError as e:
+                print("☻"*50)
+                print(f"C'est pas grave, voici l'erreur : {e}")
+                print("☻"*50)
             self.client_socket.close()
-            user_logger.info("Session terminée.")
-            user_logger.info("Déconnexion du client.")
-            user_logger.info("Fermeture de la connexion.")
 
     def get_user_logger(self,username):
         """
