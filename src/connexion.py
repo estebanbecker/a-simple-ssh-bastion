@@ -295,9 +295,6 @@ class Connexion(threading.Thread):
     >>=======================================================================================<<\r
     """
         channel.send(ascii_art + "\r\n")
-        
-        #clear terminal
-        channel.send("\033[2J\033[H")
 
 
     def print_table(self, servers, user, channel):
