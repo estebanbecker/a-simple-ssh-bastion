@@ -8,22 +8,22 @@ import paramiko
 import os
 
 
-# Configuration des serveurs cibles
-servers = {
-    '1': {'hostname': '127.0.0.1', 'username': 'user', 'password': 'password', 'port': 2200, 'groupe': '1'},
-    '2': {'hostname': 'server2.example.com', 'username': 'user2', 'password': 'password2', 'port': 2200, 'groupe': '2'},
-    '3': {'hostname': 'server3.example.com', 'username': 'user3', 'password': 'password3', 'port': 2200, 'groupe': '3'},
-    '4': {'hostname': 'server4.example.com', 'username': 'user4', 'password': 'password4', 'port': 2200, 'groupe': '4'},
-}
-
-user = {
-    'esteban': {'password': 'password', 'public_key_file': 'esteban.pub', 'groupe': ['1', '2']},
-    'user2': {'password': 'password2', 'public_key_file': None, 'groupe': ['2', '3']},
-}
-
-
 
 class Bastion:
+
+    # Configuration des serveurs cibles
+    servers = {
+        '1': {'hostname': '127.0.0.1', 'username': 'user', 'password': 'password', 'port': 2200, 'groupe': 'admin'},
+        '2': {'hostname': 'server2.example.com', 'username': 'user2', 'password': 'password2', 'port': 2200, 'groupe': '2'},
+        '3': {'hostname': 'server3.example.com', 'username': 'user3', 'password': 'password3', 'port': 2200, 'groupe': '3'},
+        '4': {'hostname': 'server4.example.com', 'username': 'user4', 'password': 'password4', 'port': 2200, 'groupe': '4'},
+    }
+
+    user = {
+        'esteban': {'password': 'password', 'public_key_file': 'esteban.pub', 'groupe': ['admin', '2']},
+        'user2': {'password': 'password2', 'public_key_file': None, 'groupe': ['2', '3']},
+    }
+
     def __init__(self, host, port):
         """
         Constructeur de la classe Bastion
@@ -85,7 +85,7 @@ class Bastion:
                 client_socket, addr = server_socket.accept()
                 print(f"Connexion acceptée de {addr[0]}:{addr[1]}")
                 self.logger.info(f"Connexion acceptée de {addr[0]}:{addr[1]}")   
-                connexion = Connexion(client_socket, self.logger, self.host_key, servers, user)
+                connexion = Connexion(client_socket, self.logger, self.host_key, self.servers, self.user)
                 threading.Thread(target=connexion.handle_client).start()
         except Exception as e:
             print(f"Erreur serveur: {e}")
