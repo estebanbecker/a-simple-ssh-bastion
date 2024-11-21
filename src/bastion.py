@@ -15,7 +15,7 @@ class Bastion:
     servers = {
         '1': {'hostname': '127.0.0.1', 'username': 'user', 'password': 'password', 'private_key_file': None, 'port': 2200, 'groupe': 'admin'},
         '2': {'hostname': 'localhost', 'username': 'root', 'password': None, 'private_key_file': 'srv2.key', 'port': 2220, 'groupe': '2'},
-        '3': {'hostname': 'localhost', 'username': 'user', 'password': 'password', 'private_key_file': None, 'port': 2202, 'groupe': '3'},
+        '3': {'hostname': 'localhost', 'username': 'root', 'password': 'None', 'private_key_file': 'srv3.key', 'port': 2221, 'groupe': 'admin'},
         '4': {'hostname': 'localhost', 'username': 'user', 'password': 'password', 'private_key_file': None, 'port': 2203, 'groupe': '4'},
     }
 

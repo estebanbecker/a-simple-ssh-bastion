@@ -83,42 +83,10 @@ class SSHServer(paramiko.ServerInterface):
         
         return paramiko.AUTH_FAILED
 
-    def check_auth_gssapi_with_mic(
-        self, username, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None
-    ):
-        """
-        Vérifier l'authentification GSSAPI
-        username: Nom d'utilisateur
-        gss_authenticated: Statut de l'authentification GSSAPI
-        cc_file: Fichier de cache de l'authentification GSSAPI"""
-
-        if gss_authenticated == paramiko.AUTH_SUCCESSFUL:
-            return paramiko.AUTH_SUCCESSFUL
-        return paramiko.AUTH_FAILED
-
-    def check_auth_gssapi_keyex(
-        self, username, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None
-    ):
-        """
-        Vérifier l'authentification GSSAPI avec échange de clés
-        username: Nom d'utilisateur
-        gss_authenticated: Statut de l'authentification GSSAPI
-        cc_file: Fichier de cache de l'authentification GSSAPI"""
-
-        if gss_authenticated == paramiko.AUTH_SUCCESSFUL:
-            return paramiko.AUTH_SUCCESSFUL
-        return paramiko.AUTH_FAILED
-
-    def enable_auth_gssapi(self):
-        """
-        Activer l'authentification GSSAPI
-        """
-        return True
-
     def get_allowed_auths(self, username):
         """
         Récupérer les méthodes d'authentification autorisées"""
-        return "gssapi-keyex,gssapi-with-mic,password,publickey"
+        return "password,publickey"
 
     def check_channel_shell_request(self, channel):
         """
