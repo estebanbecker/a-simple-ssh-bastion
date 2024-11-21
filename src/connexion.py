@@ -6,6 +6,7 @@ from SSHServer import SSHServer
 import sys
 import os
 import re
+from aes_logging import *
 
 
 class Connexion(threading.Thread):
@@ -21,6 +22,7 @@ class Connexion(threading.Thread):
         """
         self.client_socket = client_socket
         self.logger = logger
+        self.logger_encryption_key = load_aes_key()
         self.host_key = host_key
         self.servers = servers
         self.users = users
@@ -37,7 +39,8 @@ class Connexion(threading.Thread):
             try:
                 transport.load_server_moduli()
             except:
-                self.logger.warning("Impossible de charger les moduli -- gex ne sera pas pris en charge.")
+                push_log_entry(self.logger, 'warning', "Impossible de charger les moduli -- gex ne sera pas pris en charge.", self.logger_encryption_key)
+                # self.logger.warning("Impossible de charger les moduli -- gex ne sera pas pris en charge.")
                 print("(Failed to load moduli -- gex will be unsupported.)")
                 raise
 
@@ -47,21 +50,25 @@ class Connexion(threading.Thread):
             try:
                 transport.start_server(server=server)
             except paramiko.SSHException as e:
-                self.logger.error(f"Echec de la négociation SSH: {e}")
+                push_log_entry(self.logger, 'error', f"Echec de la négociation SSH: {e}", self.logger_encryption_key)
+                # self.logger.error(f"Echec de la négociation SSH: {e}")
                 print("*** SSH negotiation failed.")
                 sys.exit(1)
 
             # Ouvrir un canal de session
             channel = transport.accept(20)
             if channel is None:
-                self.logger.error("Pas de canal ouvert pour la connexion.")
+                push_log_entry(self.logger, 'error', "Pas de canal ouvert pour la connexion.", self.logger_encryption_key)
+                # self.logger.error("Pas de canal ouvert pour la connexion.")
                 print("*** No channel.")
                 sys.exit(1)
             # Authentification réussie
             username = transport.get_username()
             user_logger = self.get_user_logger(username)  # Initialiser le logger utilisateur
-            user_logger.info(f"Authentification réussie pour {username}")
-            user_logger.info(f"Utilisateur authentifié: {username}")
+            push_log_entry(user_logger, 'info', f"Authentification réussie pour {username}", self.logger_encryption_key)
+            push_log_entry(user_logger, 'info', f"Utilisateur authentifié: {username}", self.logger_encryption_key)
+            # user_logger.info(f"Authentification réussie pour {username}")
+            # user_logger.info(f"Utilisateur authentifié: {username}")
             print("Authenticated!")
 
             server.event.wait(10)
@@ -78,7 +85,8 @@ class Connexion(threading.Thread):
             channel.send("Sélectionnez un serveur:\r\n")
 
             correspondance = self.print_table(self.servers, self.users, channel)
-            self.logger.info(f"Serveurs listés pour {username}.")
+            push_log_entry(self.logger, 'info', f"Serveurs listés pour {username}.", self.logger_encryption_key)
+            # self.logger.info(f"Serveurs listés pour {username}.")
 
             target_channel = None
 
@@ -91,51 +99,60 @@ class Connexion(threading.Thread):
                                 
                     # Lire la sélection de l'utilisateur
                     server_choice = self.lire_entree_utilisateur(channel)
-                    user_logger.info(f"Sélection du serveur: {server_choice}")
+                    push_log_entry(user_logger, 'info', f"Sélection du serveur: {server_choice}", self.logger_encryption_key)
+                    # user_logger.info(f"Sélection du serveur: {server_choice}")
 
                     if server_choice == "exit":
                         channel.send("Déconnexion...\r\n")
-                        user_logger.info("Déconnexion du client.")
+                        push_log_entry(user_logger, 'info', "Déconnexion du client.", self.logger_encryption_key)
+                        # user_logger.info("Déconnexion du client.")
                         return
                     elif server_choice not in correspondance:
                         channel.send(f"\r\n")
-                        user_logger.warning(f"Sélection invalide: {server_choice}")
+                        push_log_entry(user_logger, 'warning', f"Sélection invalide: {server_choice}", self.logger_encryption_key)
+                        # user_logger.warning(f"Sélection invalide: {server_choice}")
                         channel.send("\033[91mErreur: Sélection invalide.\033[0m\r\n")
 
                 # Configuration du serveur cible
                 target_server = self.servers[correspondance[server_choice]]
 
                 channel.send(f"Connexion au serveur {target_server['hostname']} ...\r\n")
-                user_logger.info(f"Connexion au serveur {target_server['hostname']} ...")
+                push_log_entry(user_logger, 'info', f"Connexion au serveur {target_server['hostname']} ...", self.logger_encryption_key)
+                # user_logger.info(f"Connexion au serveur {target_server['hostname']} ...")
 
                 # Se connecter au serveur cible
                 try:
                     target_channel = self.connect_to_server(target_server, channel)
-                    user_logger.info(f"Connecté à {target_server['hostname']}")
+                    push_log_entry(user_logger, 'info', f"Connecté à {target_server['hostname']}", self.logger_encryption_key)
+                    # user_logger.info(f"Connecté à {target_server['hostname']}")
                     channel.send(f"Connecté à {target_server['hostname']}\r\n")
                 except Exception as e:
-                    user_logger.error(f"Impossible de se connecter à {target_server['hostname']}: {e}")
+                    push_log_entry(user_logger, 'error', f"Impossible de se connecter à {target_server['hostname']}: {e}", self.logger_encryption_key)
+                    # user_logger.error(f"Impossible de se connecter à {target_server['hostname']}: {e}")
                     channel.send(f"Impossible de se connecter à {target_server['hostname']}: {e}\r\n")
                     return
 
 
             # Démarrer les threads pour transmettre les données
-            threading.Thread(target=self.forward_data, args=(channel, target_channel, user_logger)).start()
-            threading.Thread(target=self.forward_data, args=(target_channel, channel, user_logger)).start()
+            threading.Thread(target=self.forward_data, args=(channel, target_channel, user_logger, self.logger_encryption_key)).start()
+            threading.Thread(target=self.forward_data, args=(target_channel, channel, user_logger, self.logger_encryption_key)).start()
 
             # Attendre la fin de la session
             target_channel.recv_exit_status()
-            user_logger.info(f"Déconnexion du serveur cible: {target_server['hostname']}")
+            push_log_entry(user_logger, 'info', f"Déconnexion du serveur cible: {target_server['hostname']}", self.logger_encryption_key)
+            # user_logger.info(f"Déconnexion du serveur cible: {target_server['hostname']}")
             channel.close()
 
         except paramiko.SSHException as e:
-            user_logger.error(f"Impossible de se connecter à {target_server['hostname']}: {e}")
+            push_log_entry(self.logger, 'error', f"Impossible de se connecter à {target_server['hostname']}: {e}", self.logger_encryption_key)
+            # user_logger.error(f"Impossible de se connecter à {target_server['hostname']}: {e}")
             channel.send(f"Unable to connect to {target_server['hostname']}: {e}\r\n")
             channel.close()
             print(f"Erreur: {e}")
         except Exception as e:
             try:
-                user_logger.error(f"Erreur: {e}")
+                push_log_entry(user_logger, 'error', f"Erreur: {e}", self.logger_encryption_key)
+                # user_logger.error(f"Erreur: {e}")
                 channel.send(f"Erreur: {e}\r\n")
             except UnboundLocalError as e2:
                 print("♦"*50)
@@ -144,9 +161,12 @@ class Connexion(threading.Thread):
             # print(f"Erreur: {e}")
         finally:
             try:
-                user_logger.info("Session terminée.")
-                user_logger.info("Déconnexion du client.")
-                user_logger.info("Fermeture de la connexion.")
+                push_log_entry(user_logger, 'info', "Session terminée.", self.logger_encryption_key)
+                push_log_entry(user_logger, 'info', "Déconnexion du client.", self.logger_encryption_key)
+                push_log_entry(user_logger, 'info', "Fermeture de la connexion.", self.logger_encryption_key)
+                # user_logger.info("Session terminée.")
+                # user_logger.info("Déconnexion du client.")
+                # user_logger.info("Fermeture de la connexion.")
             except UnboundLocalError as e:
                 print("☻"*50)
                 print(f"C'est pas grave, voici l'erreur : {e}")
@@ -174,7 +194,7 @@ class Connexion(threading.Thread):
         return server_choice
 
     # Transmettre les commandes et les résultats entre le client et le serveur cible
-    def forward_data(self, source_channel, dest_channel, user_logger):
+    def forward_data(self, source_channel, dest_channel, user_logger, encryption_key):
         """
         Transfère les données entre deux canaux, tout en journalisant les lignes.
         Gère les lignes inutiles et les séquences ANSI dans les données reçues.
@@ -199,12 +219,12 @@ class Connexion(threading.Thread):
                 # Si une nouvelle ligne est détectée, traiter les lignes accumulées
                 if '\n' in buffer:
                     lines = buffer.split('\n')
-                    self.process_lines(lines[:-1], user_logger, is_command_line)
+                    self.process_lines(lines[:-1], user_logger, is_command_line, encryption_key)
                     buffer = lines[-1]  # Conserver les données incomplètes
         except Exception as e:
-            error_message = f"Erreur de transfert de données: {e}"
-            print(error_message)
-            user_logger.error(error_message)
+            push_log_entry(user_logger, 'error', f"Erreur de transfert de données: {e}", encryption_key)
+            print(f"Erreur de transfert de données: {e}")
+            # user_logger.error(f"Erreur de transfert de données: {e}")
         finally:
             source_channel.close()
             dest_channel.close()
@@ -337,6 +357,7 @@ class Connexion(threading.Thread):
         
         channel.send(f"\r\n")
         return correspondance
+    
     def clean_ansi_sequences(self, text):
         """
         Supprime les séquences ANSI des données reçues.
@@ -347,7 +368,7 @@ class Connexion(threading.Thread):
         ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
         return ansi_escape.sub('', text)
     
-    def process_lines(self,lines, user_logger, is_command_line):
+    def process_lines(self,lines, user_logger, is_command_line, encryption_key):
         """
         Traite et journalise les lignes extraites du tampon.
 
@@ -358,20 +379,34 @@ class Connexion(threading.Thread):
         for line in lines:
             cleaned_line = line.strip()
 
-            if cleaned_line.endswith('$') or cleaned_line.endswith('#'):
-                # Une invite de commande détectée
-                user_logger.info(cleaned_line)
-                is_command_line = True
-            elif is_command_line:
-                # Ligne suivante après une commande utilisateur
-                user_logger.info(cleaned_line)
-                is_command_line = False
-            elif cleaned_line:
+            # if cleaned_line.endswith('$') or cleaned_line.endswith('#'):
+            #     # Une invite de commande détectée
+            #     print("endswith $ or #")
+            #     push_log_entry(user_logger, 'info', cleaned_line, encryption_key)
+            #     # encrypted_line = encrypt_log_entry(cleaned_line.encode('utf-8'), encryption_key)
+            #     # user_logger.info(base64.b64encode(encrypted_line).decode('utf-8'))
+            #     # # user_logger.info(cleaned_line)
+            #     is_command_line = True
+            # elif is_command_line:
+            #     # Ligne suivante après une commande utilisateur
+            #     print("is_command_line after")
+            #     push_log_entry(user_logger, 'info', cleaned_line, encryption_key)
+            #     # encrypted_line = encrypt_log_entry(cleaned_line.encode('utf-8'), encryption_key)
+            #     # user_logger.info(base64.b64encode(encrypted_line).decode('utf-8'))
+            #     # # user_logger.info(cleaned_line)
+            #     is_command_line = False
+            if cleaned_line:
                 # Lignes non vides
-                user_logger.info(cleaned_line)
+                push_log_entry(user_logger, 'info', cleaned_line, encryption_key)
+                # encrypted_line = encrypt_log_entry(cleaned_line.encode('utf-8'), encryption_key)
+                # user_logger.info(base64.b64encode(encrypted_line).decode('utf-8'))
+                # # user_logger.info(cleaned_line)
             else:
                 # Lignes vides provenant d'un fichier ou d'une commande
-                user_logger.info("")
+                push_log_entry(user_logger, 'info', "", encryption_key)
+                # encrypted_line = encrypt_log_entry("".encode('utf-8'), encryption_key)
+                # user_logger.info(base64.b64encode(encrypted_line).decode('utf-8'))
+                # # user_logger.info("")
 
     def visible_length(self,text):
         """Calcule la longueur visible d'une chaîne en ignorant les séquences ANSI."""
