@@ -166,4 +166,5 @@ test_rsa.key
 test_rsa.pub
 user_keys/
 test_rsa.key
-server_keys/
+server_connection_keys/
+server_public_keys/

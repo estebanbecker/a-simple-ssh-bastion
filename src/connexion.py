@@ -142,7 +142,7 @@ class Connexion(threading.Thread):
             user_logger.info("Déconnexion du client.")
             user_logger.info("Fermeture de la connexion.")
 
-    def lire_entree_utilisateur(self,channel):
+    def lire_entree_utilisateur(self,channel,show=True):
         """
         Lit l'entrée utilisateur et renvoie la sélection du serveur.
         channel: Canal de communication avec le client
@@ -155,10 +155,12 @@ class Connexion(threading.Thread):
             elif char == '\x7f':  # Gestion du backspace
                 if len(server_choice) > 0:
                     server_choice = server_choice[:-1]
-                    channel.send('\b \b')
+                    if show:
+                        channel.send('\b \b')
             else:
                 server_choice += char
-                channel.send(char)
+                if show:
+                    channel.send(char)
         channel.send('\r\n')
         return server_choice
 
@@ -210,7 +212,7 @@ class Connexion(threading.Thread):
             if 'private_key_file' in target_server and target_server['private_key_file']!= None:
                 # Authentification par clé privée
                 private_key_file = target_server['private_key_file']
-                self.location_private_key = "server_keys/"
+                self.location_private_key = "server_connection_keys/"
                 
                 private_key_file = os.path.join(self.location_private_key, private_key_file)
                 # Charger la clé privée
@@ -218,8 +220,19 @@ class Connexion(threading.Thread):
                     private_key = paramiko.RSAKey.from_private_key_file(private_key_file)
                 except paramiko.ssh_exception.PasswordRequiredException:
                     # Demander le mot de passe de la clé privée
-                    private_key_password = channel.getpass("Mot de passe de la clé privée: ")
-                    private_key = paramiko.RSAKey.from_private_key_file(private_key_file, password=private_key_password)
+                    test = 0
+                    correct_password = False
+                    while not correct_password and test < 3:
+                        test += 1
+                        channel.send("Mot de passe de la clé privée: ")
+                        private_key_password = self.lire_entree_utilisateur(channel, False)
+                        try:
+                            private_key = paramiko.RSAKey.from_private_key_file(private_key_file, password=private_key_password)
+                            correct_password = True
+                        # Si le mot de passe est incorrect
+                        except paramiko.ssh_exception.SSHException as e:
+                            channel.send(f"Mot de passe incorrect: {e}\r\n")
+
                 
                 #Si la clé privée n'est pas au format RSA, essayer avec une clé DSA
                 except paramiko.ssh_exception.SSHException:
@@ -227,17 +240,38 @@ class Connexion(threading.Thread):
                         private_key = paramiko.DSSKey.from_private_key_file(private_key_file)
                     except paramiko.ssh_exception.PasswordRequiredException:
                         # Demander le mot de passe de la clé privée
-                        private_key_password = channel.getpass("Mot de passe de la clé privée: ")
-                        private_key = paramiko.DSSKey.from_private_key_file(private_key_file, password=private_key_password)
-                    
+                        test = 0
+                        correct_password = False
+                        while not correct_password and test < 3:
+                            test += 1
+                            channel.send("Mot de passe de la clé privée: ")
+                            private_key_password = self.lire_entree_utilisateur(channel, False)
+                            try:
+                                private_key = paramiko.DSSKey.from_private_key_file(private_key_file, password=private_key_password)
+                                correct_password = True
+                            # Si le mot de passe est incorrect
+                            except paramiko.ssh_exception.SSHException as e:
+                                channel.send(f"Mot de passe incorrect: {e}\r\n")
+                                raise Exception(f"Mot de passe incorrect: {e}")
                     #Si la clé privée n'est pas au format DSA, essayer avec une clé ECDSA
                     except paramiko.ssh_exception.SSHException:
                         try:
                             private_key = paramiko.ECDSAKey.from_private_key_file(private_key_file)
                         except paramiko.ssh_exception.PasswordRequiredException:
                             # Demander le mot de passe de la clé privée
-                            private_key_password = channel.getpass("Mot de passe de la clé privée: ")
-                            private_key = paramiko.ECDSAKey.from_private_key_file(private_key_file, password=private_key_password)
+                            test = 0
+                            correct_password = False
+                            while not correct_password and test < 3:
+                                test += 1
+                                channel.send("Mot de passe de la clé privée: ")
+                                private_key_password = self.lire_entree_utilisateur(channel, False)
+                                try:
+                                    private_key = paramiko.ECDSAKey.from_private_key_file(private_key_file, password=private_key_password)
+                                    correct_password = True
+                                # Si le mot de passe est incorrect
+                                except paramiko.ssh_exception.SSHException as e:
+                                    channel.send(f"Mot de passe incorrect: {e}\r\n")
+                                    raise Exception(f"Mot de passe incorrect: {e}")
 
                 target_transport.connect(username=target_server['username'], pkey=private_key)
             else:
