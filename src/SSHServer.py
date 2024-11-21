@@ -2,6 +2,7 @@ import paramiko
 import threading
 import base64
 from binascii import hexlify
+from aes_logging import *
 
 class SSHServer(paramiko.ServerInterface):
     """
@@ -19,10 +20,12 @@ class SSHServer(paramiko.ServerInterface):
 
         self.event = threading.Event()
         self.logger = logger
+        self.logger_encryption_key = load_aes_key()
         self.user = user
 
         host_key = paramiko.RSAKey(filename="test_rsa.key")
-        self.logger.info("Read key: %s", hexlify(host_key.get_fingerprint()))
+        push_log_entry(self.logger, 'info', "Read key: %s" % hexlify(host_key.get_fingerprint()), self.logger_encryption_key)
+        # self.logger.info("Read key: %s", hexlify(host_key.get_fingerprint()))
 
     def set_user(self, user):
         """
@@ -47,7 +50,8 @@ class SSHServer(paramiko.ServerInterface):
         password: Mot de passe"""
 
         if username in self.user and password == self.user[username]['password']:
-            self.logger.info(f"Authentification par mot de passe réussie pour {username}")
+            push_log_entry(self.logger, 'info', f"Authentification par mot de passe réussie pour {username}", self.logger_encryption_key)
+            # self.logger.info(f"Authentification par mot de passe réussie pour {username}")
             print(f"Authentification par mot de passe réussie pour {username}")
             return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
@@ -74,11 +78,13 @@ class SSHServer(paramiko.ServerInterface):
             
             # Comparer les empreintes digitales des clés
             if key.get_fingerprint() == stored_key.get_fingerprint():
-                self.logger.info(f"Clé publique vérifiée pour {username}")
+                push_log_entry(self.logger, 'info', f"Clé publique vérifiée pour {username}", self.logger_encryption_key)
+                # self.logger.info(f"Clé publique vérifiée pour {username}")
                 print(f"Clé publique vérifiée pour {username}")
                 return paramiko.AUTH_SUCCESSFUL
         except Exception as e:
-            self.logger.error(f"Erreur lors de la vérification de la clé publique pour {username}: {e}") 
+            push_log_entry(self.logger, 'error', f"Erreur lors de la vérification de la clé publique pour {username}: {e}", self.logger_encryption_key)
+            # self.logger.error(f"Erreur lors de la vérification de la clé publique pour {username}: {e}") 
             print(f"Erreur lors de la vérification de la clé publique pour {username}: {e}")
         
         return paramiko.AUTH_FAILED
@@ -162,6 +168,7 @@ class SSHServer(paramiko.ServerInterface):
                 elif key_data.startswith("ecdsa-sha2-nistp256"):
                     return paramiko.ECDSAKey(data=base64.b64decode(key_data.split()[1]))
         except Exception as e:
-            self.logger.error(f"Erreur lors de la lecture de la clé publique: {e}")
+            push_log_entry(self.logger, 'error', f"Erreur lors de la lecture de la clé publique: {e}", self.logger_encryption_key)
+            # self.logger.error(f"Erreur lors de la lecture de la clé publique: {e}")
             print(f"Erreur lors de la lecture de la clé publique: {e}")
             return None
