@@ -167,3 +167,4 @@ test_rsa.pub
 user_keys/
 test_rsa.key
 server_keys/
+aes_key.key
