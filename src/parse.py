@@ -31,12 +31,13 @@ def parse_servers(file_path):
         # Récupérer les serveurs et les transformer en dictionnaire
         servers = data.get("servers", [])
         servers_dict = {
-            server.get("group"): {
+            server.get("id"): {
                 "hostname": server.get("destination"),
                 "port": server.get("port", 2200),  # Port par défaut si non spécifié
                 "username": server.get("username"),
                 "password": server.get("password"),
-                "groupe": server.get("group")
+                "groupe": server.get("group"),
+                "private_key_file": server.get("private_key")
             }
             for server in servers
         }
