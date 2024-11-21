@@ -6,7 +6,7 @@ from SSHServer import SSHServer
 import sys
 import os
 import re
-
+import base64
 
 class Connexion(threading.Thread):
     """
@@ -214,6 +214,41 @@ class Connexion(threading.Thread):
         """
         # Connexion au serveur cible
         target_transport = paramiko.Transport((target_server['hostname'], target_server['port']))
+        target_transport.start_client()
+
+        # Check host key
+        server_key = target_transport.get_remote_server_key()
+        public_key_location = "server_public_keys/"
+        public_key_file = os.path.join(public_key_location, str(target_server['hostname']) + "-" + str(target_server['port']) + ".pub")
+        if not os.path.exists(public_key_file):
+            # Save the server public key
+            with open(public_key_file, 'wb') as file:
+                # Save the server public key with the correct format
+                if isinstance(server_key, paramiko.RSAKey):
+                    file.write(f"ssh-rsa {base64.b64encode(server_key.asbytes()).decode()}\r\n".encode())
+                elif isinstance(server_key, paramiko.DSSKey):
+                    file.write(f"ssh-dss {base64.b64encode(server_key.asbytes()).decode()}\r\n".encode())
+                elif isinstance(server_key, paramiko.Ed25519Key):
+                    file.write(f"ssh-ed25519 {base64.b64encode(server_key.asbytes()).decode()}\r\n".encode())
+                elif isinstance(server_key, paramiko.ECDSAKey):
+                    file.write(f"ecdsa-sha2-nistp256 {base64.b64encode(server_key.asbytes()).decode()}\r\n".encode())
+        else:
+            # Compare the server public key with the saved key
+            with open(public_key_file, 'rb') as file:
+                key_data = file.read().strip()
+                if key_data.startswith(b"ssh-rsa"):
+                    saved_key = paramiko.RSAKey(data=base64.b64decode(key_data.split()[1]))
+                elif key_data.startswith(b"ssh-dss"):
+                    saved_key = paramiko.DSSKey(data=base64.b64decode(key_data.split()[1]))
+                elif key_data.startswith(b"ssh-ed25519"):
+                    saved_key = paramiko.Ed25519Key(data=base64.b64decode(key_data.split()[1]))
+                elif key_data.startswith(b"ecdsa-sha2-nistp256"):
+                    saved_key = paramiko.ECDSAKey(data=base64.b64decode(key_data.split()[1]))
+                if server_key.get_fingerprint() != saved_key.get_fingerprint():
+                    channel.send("\033[91mClé publique du serveur inconnue. Connection refusé. Veuillez contacter un administrateur\033[0m\r\n")
+                    raise Exception("Clé publique du serveur "+str(target_server['hostname'])+":"+str(target_server['port'])+" inconnue.")
+
+
         try:
             if 'private_key_file' in target_server and target_server['private_key_file']!= None:
                 # Authentification par clé privée
@@ -279,20 +314,17 @@ class Connexion(threading.Thread):
                                     channel.send(f"Mot de passe incorrect: {e}\r\n")
                                     raise Exception(f"Mot de passe incorrect: {e}")
 
-                target_transport.connect(username=target_server['username'], pkey=private_key)
+                target_transport.auth_publickey(username=target_server['username'], key=private_key)
             else:
                 # Authentification par mot de passe
-                target_transport.connect(username=target_server['username'], password=target_server['password'])      
+                target_transport.auth_password(username=target_server['username'], password=target_server['password'])      
 
         except paramiko.ssh_exception.AuthenticationException as e:
             raise Exception(f"Erreur d'authentification: {e}")  
         
         # Check host key
         server_key = target_transport.get_remote_server_key()
-        key_type = server_key.get_name()
-        key_data = server_key.asbytes()
-        fingerprint = ":".join("{:02x}".format(c) for c in server_key.get_fingerprint())
-        channel.send(f"Clé hôte {key_type} {fingerprint}\r\n")
+
 
         target_channel = target_transport.open_session()
         target_channel.get_pty()
