@@ -75,6 +75,33 @@ def encrypt_log_entry(data, key):
     # Retourner les données chiffrées avec l'IV et le tag
     return iv + encryptor.tag + encrypted_data
 
+# Push log entry to the log file with logger instance. Je dois tenir compte du type de log (info, warning, ...)
+def push_log_entry(logger, log_type, data, key):
+    """
+    Chiffre et enregistre une entrée de log dans un fichier de log.
+    
+    :param logger: Instance du logger
+    :param log_type: Type de log (info, warning, error)
+    :param data: Données à enregistrer
+    :param key: Clé de chiffrement
+    """
+    encrypted_data = encrypt_log_entry(data.encode('utf-8'), key)
+    encoded_encrypted_data = base64.b64encode(encrypted_data).decode('utf-8')
+
+    # Log the encrypted data according to the log type
+    if log_type == 'info':
+        logger.info(f"{encoded_encrypted_data}")
+    elif log_type == 'warning':
+        logger.warning(f"{encoded_encrypted_data}")
+    elif log_type == 'error':
+        logger.error(f"{encoded_encrypted_data}")
+    elif log_type == 'critical':
+        logger.critical(f"{encoded_encrypted_data}")
+    elif log_type == 'debug':
+        logger.debug(f"{encoded_encrypted_data}")
+    else:
+        logger.info(f"{encoded_encrypted_data}")
+
 def decrypt_log_entry(encrypted_data, key):
     """
     Déchiffre une entrée de log avec AES.
