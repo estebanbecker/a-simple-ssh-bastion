@@ -197,8 +197,14 @@ class Connexion(threading.Thread):
             print(error_message)
             user_logger.error(error_message)
         finally:
-            source_channel.close()
-            dest_channel.close()
+            try:
+                source_channel.close()
+            except:
+                pass
+            try:
+                dest_channel.close()
+            except:
+                pass
 
     def connect_to_server(self,target_server, channel):
         """
@@ -281,6 +287,13 @@ class Connexion(threading.Thread):
         except paramiko.ssh_exception.AuthenticationException as e:
             raise Exception(f"Erreur d'authentification: {e}")  
         
+        # Check host key
+        server_key = target_transport.get_remote_server_key()
+        key_type = server_key.get_name()
+        key_data = server_key.asbytes()
+        fingerprint = ":".join("{:02x}".format(c) for c in server_key.get_fingerprint())
+        channel.send(f"Clé hôte {key_type} {fingerprint}\r\n")
+
         target_channel = target_transport.open_session()
         target_channel.get_pty()
         target_channel.invoke_shell()
