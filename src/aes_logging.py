@@ -101,27 +101,6 @@ def decrypt_log_entry(encrypted_data, key):
 
     return data
 
-# def decrypt_log_file(input_file, output_file, key):
-#     """
-#     Déchiffre un fichier de log contenant des entrées chiffrées.
-
-#     :param input_file: Chemin du fichier de log chiffré
-#     :param output_file: Chemin du fichier de log déchiffré
-#     :param key: Clé de chiffrement
-#     """
-#     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
-#         for line in f_in:
-#             parts = line.split(' - ', 1)
-#             if len(parts) >= 2:
-#                 timestamp = parts[0]
-#                 encrypted_data = base64.b64decode(parts[:-1].strip())
-#                 if encrypted_data.startswith(b'[') and encrypted_data.endswith(b']'):
-#                     encrypted_data = encrypted_data[1:-1]
-#                 decrypted_data = decrypt_log_entry(encrypted_data, key)
-#                 f_out.write(f"{timestamp} - {decrypted_data.decode('utf-8')}\n")
-#             # else:
-#             #     f_out.write(line)
-
 def decrypt_log_file(input_file, output_file, key):
     """
     Déchiffre un fichier de log contenant des entrées chiffrées.
@@ -133,14 +112,15 @@ def decrypt_log_file(input_file, output_file, key):
     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
         for line in f_in:
             # Rechercher les parties chiffrées
-            matches = re.findall(r"b'(.+?)'|b\"(.+?)\"", line)
-            print(line)
-            
-            for match in matches:
-                encrypted_data = base64.b64decode(match[0] if match[0] else match[1])
+            match = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - (.+)", line)
+            if match:
+                timestamp = match.group(1)
+                encrypted_data = base64.b64decode(match.group(2))
                 decrypted_data = decrypt_log_entry(encrypted_data, key)
-                line = line.replace(match[0] if match[0] else match[1], decrypted_data.decode('utf-8'))
-            f_out.write(line)
+                f_out.write(f"{timestamp} - {decrypted_data.decode('utf-8')}\n")
+            else:
+                f_out.write(line)
+
 
 if __name__ == '__main__':
     key = load_aes_key()
