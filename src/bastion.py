@@ -6,23 +6,17 @@ import logging
 from connexion import Connexion
 import paramiko
 import os
+from parse import parse_servers, parse_user
 
 
 
 class Bastion:
 
     # Configuration des serveurs cibles
-    servers = {
-        '1': {'hostname': '127.0.0.1', 'username': 'user', 'password': 'password', 'private_key_file': None, 'port': 2200, 'groupe': 'admin'},
-        '2': {'hostname': 'localhost', 'username': 'root', 'password': None, 'private_key_file': 'srv2.key', 'port': 2220, 'groupe': '2'},
-        '3': {'hostname': 'localhost', 'username': 'root', 'password': 'None', 'private_key_file': 'srv3.key', 'port': 2221, 'groupe': 'admin'},
-        '4': {'hostname': 'localhost', 'username': 'user', 'password': 'password', 'private_key_file': None, 'port': 2203, 'groupe': '4'},
-    }
+    servers = parse_servers("./src/config.json")
 
-    user = {
-        'esteban': {'password': 'password', 'public_key_file': 'esteban.pub', 'groupe': ['admin', '2']},
-        'user2': {'password': 'password2', 'public_key_file': None, 'groupe': ['2', '3']},
-    }
+    # Configuration des utilisateurs
+    user = parse_user("./src/config.json")
 
     def __init__(self, host, port):
         """
