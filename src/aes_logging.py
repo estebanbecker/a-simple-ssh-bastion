@@ -139,16 +139,24 @@ def decrypt_log_file(input_file, output_file, key):
     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
         for line in f_in:
             # Rechercher les parties chiffrées
-            match = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - (.+)", line)
+            match = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})( - .*){0,2} - (.*)", line)
             if match:
                 timestamp = match.group(1)
-                encrypted_data = base64.b64decode(match.group(2))
-                decrypted_data = decrypt_log_entry(encrypted_data, key)
-                f_out.write(f"{timestamp} - {decrypted_data.decode('utf-8')}\n")
+                if match.group(2):
+                    # on est dans le cas : %(asctime)s - %(name)s - %(levelname)s - %(message)s
+                    # le groupe2 contient : " - %(name)s - %(levelname)s"
+                    encrypted_data = base64.b64decode(match.group(3))
+                    decrypted_data = decrypt_log_entry(encrypted_data, key)
+                    f_out.write(f"{timestamp}{match.group(2)} - {decrypted_data.decode('utf-8')}\n")
+                else:
+                    encrypted_data = base64.b64decode(match.group(3))
+                    decrypted_data = decrypt_log_entry(encrypted_data, key)
+                    f_out.write(f"{timestamp} - {decrypted_data.decode('utf-8')}\n")
             else:
                 f_out.write(line)
 
 
 if __name__ == '__main__':
     key = load_aes_key()
-    decrypt_log_file('./logs/esteban.log', './logs/decrypted_esteban.log', key)
+    # decrypt_log_file('./logs/esteban.log', './logs/decrypted_esteban.log', key)
+    decrypt_log_file('./bastion.log', './decrypted_bastion.log', key)
