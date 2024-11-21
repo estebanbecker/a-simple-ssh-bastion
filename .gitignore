@@ -168,3 +168,4 @@ user_keys/
 test_rsa.key
 server_connection_keys/
 server_public_keys/
+aes_key.key
