@@ -33,7 +33,7 @@
             "id" : "2",
             "group": "2",
             "destination": "localhost",
-            "port": 2200,
+            "port": 2220,
             "username": null,
             "password": "server2password",
             "private_key": "srv2.key"
@@ -42,7 +42,7 @@
             "id" : "3",
             "group": "admin",
             "destination": "localhost",
-            "port": 2200,
+            "port": 2221,
             "username": null,
             "password": "server3password",
             "private_key": "srv3.key"
@@ -51,7 +51,7 @@
             "id" : "4",
             "group": "4",
             "destination": "localhost",
-            "port": 2200,
+            "port": 2203,
             "username": "user",
             "password": "password",
             "private_key": null
