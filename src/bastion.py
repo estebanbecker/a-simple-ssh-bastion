@@ -33,7 +33,7 @@ class Bastion:
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler("bastion.log"),
+                logging.FileHandler("./logs/BASTION.log"),
                 logging.StreamHandler(sys.stdout)
             ]
         )
