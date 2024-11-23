@@ -17,6 +17,15 @@
                 "2",
                 "3"
             ]
+        },
+        {
+            "username": "eliseo",
+            "password": "$2b$12$Xk3zpuHe6e78kcTiUv.7qOYO2S7jenqyyo8k47O279D5sh8G6tpgq",
+            "ssh_key": null,
+            "groups": [
+                "admin",
+                "2"
+            ]
         }
     ],
     "servers": [
