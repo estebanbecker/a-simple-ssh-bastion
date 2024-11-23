@@ -6,12 +6,12 @@ import os
 import re
 
 
-def generate_and_save_aes_key(file_path='aes_key.key', key_size=128):
+def generate_and_save_aes_key(file_path='aes_key.key', key_size=256):
     """
     Génère une clé AES de key_size bits et la sauvegarde dans un fichier.
     
     :param file_path: Chemin du fichier où sauvegarder la clé (par défaut : 'aes_key.key')
-    :param key_size: Taille de la clé en bits (par défaut : 128)
+    :param key_size: Taille de la clé en bits (par défaut : 256)
     """
     # Vérifier que la taille de la clé est valide
     if key_size not in [128, 192, 256]:
@@ -39,7 +39,7 @@ def load_aes_key(file_path='aes_key.key'):
     """
     # Vérifier que le fichier existe
     if not os.path.exists(file_path):
-        generate_and_save_aes_key(file_path, key_size=256)
+        generate_and_save_aes_key(file_path)
 
     # Lire la clé depuis le fichier
     with open(file_path, 'r') as f:
