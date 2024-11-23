@@ -2,7 +2,7 @@
     "users": [
         {
             "username": "esteban",
-            "password": "$2b$12$Dm.ZZaugFcIhExGHnaFXFuQd4sr7MP4VxOdVVmZAPPV2Olm7GKKWq",
+            "password": "$2b$12$OLB1gZIWyQuclrhlNzx/V.MByi/MWqovGdQbXG5weLicPSy2Kl5kC",
             "ssh_key": "esteban.pub",
             "groups": [
                 "admin",
@@ -21,7 +21,7 @@
     ],
     "servers": [
         {
-            "id" : "1",
+            "id": "1",
             "group": "admin",
             "destination": "127.0.0.1",
             "port": 2200,
@@ -30,7 +30,7 @@
             "private_key": null
         },
         {
-            "id" : "2",
+            "id": "2",
             "group": "2",
             "destination": "localhost",
             "port": 2220,
@@ -39,7 +39,7 @@
             "private_key": "srv2.key"
         },
         {
-            "id" : "3",
+            "id": "3",
             "group": "admin",
             "destination": "localhost",
             "port": 2221,
@@ -48,7 +48,7 @@
             "private_key": "srv3.key"
         },
         {
-            "id" : "4",
+            "id": "4",
             "group": "4",
             "destination": "localhost",
             "port": 2203,
