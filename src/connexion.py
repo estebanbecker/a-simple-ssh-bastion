@@ -252,6 +252,9 @@ class Connexion(threading.Thread):
         server_key = target_transport.get_remote_server_key()
         public_key_location = "server_public_keys/"
         public_key_file = os.path.join(public_key_location, str(target_server['hostname']) + "-" + str(target_server['port']) + ".pub")
+        #check if the folder exist
+        if not os.path.exists(public_key_location):
+            os.makedirs(public_key_location)
         if not os.path.exists(public_key_file):
             # Save the server public key
             with open(public_key_file, 'wb') as file:
