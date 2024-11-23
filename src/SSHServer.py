@@ -3,6 +3,7 @@ import threading
 import base64
 from binascii import hexlify
 from aes_logging import *
+import bcrypt
 
 class SSHServer(paramiko.ServerInterface):
     """
@@ -49,7 +50,7 @@ class SSHServer(paramiko.ServerInterface):
         username: Nom d'utilisateur
         password: Mot de passe"""
 
-        if username in self.user and password == self.user[username]['password']:
+        if username in self.user and bcrypt.checkpw(password.encode('utf-8'), self.user[username]['password'].encode('utf-8')):
             push_log_entry(self.logger, 'info', f"Authentification par mot de passe réussie pour {username}", self.logger_encryption_key)
             # self.logger.info(f"Authentification par mot de passe réussie pour {username}")
             print(f"Authentification par mot de passe réussie pour {username}")
