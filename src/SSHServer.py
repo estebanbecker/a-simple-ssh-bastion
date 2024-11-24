@@ -26,7 +26,6 @@ class SSHServer(paramiko.ServerInterface):
 
         host_key = paramiko.RSAKey(filename="test_rsa.key")
         push_log_entry(self.logger, 'info', "Read key: %s" % hexlify(host_key.get_fingerprint()), self.logger_encryption_key)
-        # self.logger.info("Read key: %s", hexlify(host_key.get_fingerprint()))
 
     def set_user(self, user):
         """
@@ -52,7 +51,6 @@ class SSHServer(paramiko.ServerInterface):
 
         if username in self.user and bcrypt.checkpw(password.encode('utf-8'), self.user[username]['password'].encode('utf-8')):
             push_log_entry(self.logger, 'info', f"Authentification par mot de passe réussie pour {username}", self.logger_encryption_key)
-            # self.logger.info(f"Authentification par mot de passe réussie pour {username}")
             print(f"Authentification par mot de passe réussie pour {username}")
             return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
@@ -80,12 +78,10 @@ class SSHServer(paramiko.ServerInterface):
             # Comparer les empreintes digitales des clés
             if key.get_fingerprint() == stored_key.get_fingerprint():
                 push_log_entry(self.logger, 'info', f"Clé publique vérifiée pour {username}", self.logger_encryption_key)
-                # self.logger.info(f"Clé publique vérifiée pour {username}")
                 print(f"Clé publique vérifiée pour {username}")
                 return paramiko.AUTH_SUCCESSFUL
         except Exception as e:
             push_log_entry(self.logger, 'error', f"Erreur lors de la vérification de la clé publique pour {username}: {e}", self.logger_encryption_key)
-            # self.logger.error(f"Erreur lors de la vérification de la clé publique pour {username}: {e}") 
             print(f"Erreur lors de la vérification de la clé publique pour {username}: {e}")
         
         return paramiko.AUTH_FAILED
@@ -138,6 +134,5 @@ class SSHServer(paramiko.ServerInterface):
                     return paramiko.ECDSAKey(data=base64.b64decode(key_data.split()[1]))
         except Exception as e:
             push_log_entry(self.logger, 'error', f"Erreur lors de la lecture de la clé publique: {e}", self.logger_encryption_key)
-            # self.logger.error(f"Erreur lors de la lecture de la clé publique: {e}")
             print(f"Erreur lors de la lecture de la clé publique: {e}")
             return None
