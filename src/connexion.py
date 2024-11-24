@@ -336,9 +336,6 @@ class Connexion(threading.Thread):
 
         except paramiko.ssh_exception.AuthenticationException as e:
             raise Exception(f"Erreur d'authentification: {e}")  
-        
-        # Check host key
-        server_key = target_transport.get_remote_server_key()
 
 
         target_channel = target_transport.open_session()
