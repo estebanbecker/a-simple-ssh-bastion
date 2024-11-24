@@ -28,6 +28,11 @@ class Bastion:
         self.host = host
         self.port = port
 
+        #check if the logs directory exists, if not create it
+        if not os.path.exists('./logs'):
+            os.makedirs('./logs')
+        
+
         # Configuration de la journalisation globale
         logging.basicConfig(
             level=logging.INFO,
