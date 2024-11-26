@@ -19,12 +19,9 @@ def generate_and_save_aes_key(file_path='logs/aes_key.key', key_size=256):
     
     # Générer une clé AES de key_size bits
     key = os.urandom(key_size // 8)  # key_size bits = key_size // 8 octets
-    print(f"Clé AES: {key}")
 
     # Encoder la clé en base64 pour une meilleure lisibilité et stockage
     key_base64 = base64.b64encode(key).decode('utf-8')
-
-    print(f"Clé AES de {key_size} bits (encodée en base64) : {key_base64}")
 
     # Sauvegarder la clé dans un fichier
     with open(file_path, 'w') as f:
