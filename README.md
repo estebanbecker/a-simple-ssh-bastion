@@ -19,7 +19,7 @@ Ce projet fournit une configuration simple pour un bastion SSH. Un bastion SSH e
 ## Utilisation
 Pour vous connecter à un serveur privé via le bastion SSH, utilisez la commande suivante :
 ```bash
-ssh -J user@bastion_server user@private_server
+ssh -J user@bastion_server
 ```
 
 ## Contribuer
