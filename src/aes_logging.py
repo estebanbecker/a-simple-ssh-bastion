@@ -6,11 +6,11 @@ import os
 import re
 
 
-def generate_and_save_aes_key(file_path='aes_key.key', key_size=256):
+def generate_and_save_aes_key(file_path='logs/aes_key.key', key_size=256):
     """
     Génère une clé AES de key_size bits et la sauvegarde dans un fichier.
     
-    :param file_path: Chemin du fichier où sauvegarder la clé (par défaut : 'aes_key.key')
+    :param file_path: Chemin du fichier où sauvegarder la clé (par défaut : 'logs/aes_key.key')
     :param key_size: Taille de la clé en bits (par défaut : 256)
     """
     # Vérifier que la taille de la clé est valide
@@ -30,11 +30,11 @@ def generate_and_save_aes_key(file_path='aes_key.key', key_size=256):
     with open(file_path, 'w') as f:
         f.write(key_base64)
 
-def load_aes_key(file_path='aes_key.key'):
+def load_aes_key(file_path='logs/aes_key.key'):
     """
     Charge une clé AES depuis un fichier.
     
-    :param file_path: Chemin du fichier où charger la clé (par défaut : 'aes_key.key')
+    :param file_path: Chemin du fichier où charger la clé (par défaut : 'logs/aes_key.key')
     :return: Clé AES chargée
     """
     # Vérifier que le fichier existe
