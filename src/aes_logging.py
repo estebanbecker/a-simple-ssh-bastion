@@ -6,12 +6,12 @@ import os
 import re
 
 
-def generate_and_save_aes_key(file_path='aes_key.key', key_size=128):
+def generate_and_save_aes_key(file_path='aes_key.key', key_size=256):
     """
     Génère une clé AES de key_size bits et la sauvegarde dans un fichier.
     
     :param file_path: Chemin du fichier où sauvegarder la clé (par défaut : 'aes_key.key')
-    :param key_size: Taille de la clé en bits (par défaut : 128)
+    :param key_size: Taille de la clé en bits (par défaut : 256)
     """
     # Vérifier que la taille de la clé est valide
     if key_size not in [128, 192, 256]:
@@ -75,7 +75,6 @@ def encrypt_log_entry(data, key):
     # Retourner les données chiffrées avec l'IV et le tag
     return iv + encryptor.tag + encrypted_data
 
-# Push log entry to the log file with logger instance. Je dois tenir compte du type de log (info, warning, ...)
 def push_log_entry(logger, log_type, data, key):
     """
     Chiffre et enregistre une entrée de log dans un fichier de log.
@@ -158,5 +157,12 @@ def decrypt_log_file(input_file, output_file, key):
 
 if __name__ == '__main__':
     key = load_aes_key()
-    # decrypt_log_file('./logs/esteban.log', './logs/decrypted_esteban.log', key)
-    decrypt_log_file('./bastion.log', './decrypted_bastion.log', key)
+
+    # décrypte tous les fichiers dans le dossier logs
+    for file in os.listdir('./logs'):
+        if file.endswith('.log') and not file.startswith('decrypted_'):
+            decrypt_log_file(f'./logs/{file}', f'./logs/decrypted_{file}', key)
+            # afficher phrase de confirmation avec le chemin du fichier de log
+            print(f"Fichier ./logs/{file} déchiffré avec succès !")
+
+    print("Tous les fichiers de log ont été déchiffrés avec succès !")

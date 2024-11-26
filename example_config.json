@@ -1,12 +1,12 @@
 {
     "users": [
         {
-            "username": "esteban",
+            "username": "user1",
             "password": "$2b$12$OLB1gZIWyQuclrhlNzx/V.MByi/MWqovGdQbXG5weLicPSy2Kl5kC",
-            "ssh_key": "esteban.pub",
+            "ssh_key": "key_file_name.pub",
             "groups": [
-                "admin",
-                "2"
+                "groupe1",
+                "groupe2"
             ]
         },
         {
@@ -14,15 +14,24 @@
             "password": "$2b$12$.FDFflYTXRVZbHQqj1tWsu6/nhLbdTQzAqDEjls5H5dW3ejHQjEWW",
             "ssh_key": null,
             "groups": [
-                "2",
-                "3"
+                "groupe2",
+                "groupe3"
+            ]
+        },
+        {
+            "username": "user3",
+            "password": "$2b$12$Xk3zpuHe6e78kcTiUv.7qOYO2S7jenqyyo8k47O279D5sh8G6tpgq",
+            "ssh_key": null,
+            "groups": [
+                "groupe1",
+                "groupe2"
             ]
         }
     ],
     "servers": [
         {
             "id": "1",
-            "group": "admin",
+            "group": "groupe1",
             "destination": "127.0.0.1",
             "port": 2200,
             "username": "user",
@@ -31,25 +40,25 @@
         },
         {
             "id": "2",
-            "group": "2",
+            "group": "groupe2",
             "destination": "localhost",
             "port": 2220,
-            "username": null,
+            "username": "root",
             "password": "server2password",
             "private_key": "srv2.key"
         },
         {
             "id": "3",
-            "group": "admin",
+            "group": "groupe3",
             "destination": "localhost",
             "port": 2221,
-            "username": null,
+            "username": "root",
             "password": "server3password",
             "private_key": "srv3.key"
         },
         {
             "id": "4",
-            "group": "4",
+            "group": "groupe4",
             "destination": "localhost",
             "port": 2203,
             "username": "user",

@@ -50,11 +50,11 @@ def parse_servers(file_path):
 
 if __name__ == '__main__':
     # Analyse de la partie 'users' du fichier de configuration
-    config_user = parse_user("./src/config.json")
+    config_user = parse_user("./src/config/config.json")
     result = json.dumps(config_user, indent=4) # Convertir le dictionnaire en chaîne JSON
     print(result)
 
     # Analyse de la partie 'servers' du fichier de configuration
-    config_server = parse_servers("./src/config.json")
+    config_server = parse_servers("./src/config/config.json")
     result = json.dumps(config_server, indent=4) # Convertir le dictionnaire en chaîne JSON
     print(result)
