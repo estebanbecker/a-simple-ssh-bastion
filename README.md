@@ -10,7 +10,7 @@ Ce projet fournit une configuration simple pour un bastion SSH. Un bastion SSH e
 ## Installation
 1. Lancer le serveur via Docker :
     ```bash
-    docker run -d -p 2222:2222 --name ssh-bastion monsieurplacard/a-simple-ssh-bastion -v /path/to/config:/src/config -v /path/to/server-connection-keys:/src/server_connection_keys -v /path/to/user-keys:/src/user_keys -v /path/to/logs:/src/logs 
+    docker run -d -p 2222:2222 --name ssh-bastion -v ./config:/app/config -v ./server_connection_keys:/app/server_connection_keys -v ./user_keys:/app/user_keys -v ./logs:/app/logs monsieurplacard/a-simple-ssh-bastion
     ```
 
 ## Configuration
