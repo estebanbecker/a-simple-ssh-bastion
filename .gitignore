@@ -170,3 +170,4 @@ server_connection_keys/
 server_public_keys/
 aes_key.key
 src/config.json
+config/

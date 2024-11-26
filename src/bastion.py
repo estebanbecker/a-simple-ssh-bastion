@@ -14,10 +14,10 @@ from parse import parse_servers, parse_user
 class Bastion:
 
     # Configuration des serveurs cibles
-    servers = parse_servers("./src/config.json")
+    servers = parse_servers("./config/config.json")
 
     # Configuration des utilisateurs
-    user = parse_user("./src/config.json")
+    user = parse_user("./config/config.json")
 
     def __init__(self, host, port):
         """
