@@ -1,7 +1,7 @@
 # A Simple SSH Bastion
 
 ## Description
-Ce projet fournit une configuration simple pour un bastion SSH. Un bastion SSH est un serveur intermédiaire utilisé pour accéder à des serveurs privés situés derrière un pare-feu.
+Ce projet fournit une configuration simple pour un bastion SSH. Un bastion SSH est un serveur intermédiaire utilisé pour accéder à des serveurs privés situés derrière un pare-feu. Ce projet à été dans le cadre d'un projet universitaire et n'est pas penséé pour un déploiement en raison de gros manquements en terme de sécurité et du non.
 
 ## Prérequis
 - Un serveur Debian
